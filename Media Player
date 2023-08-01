@@ -1,0 +1,74 @@
+import os
+import tkinter as tk
+from tkinter import filedialog
+import winsound
+import time
+from tkinter import ttk
+
+class AudioPlayer:
+    def __init__(self, root):
+        self.root = root
+        self.root.title("Audio Player")
+
+        self.playing = False
+        self.audio_path = None
+        self.song_length = 0
+        self.start_time = 0
+
+        self.open_button = tk.Button(root, text="Open Audio File", command=self.open_file)
+        self.open_button.pack(pady=10)
+
+        self.play_pause_button = tk.Button(root, text="Play", command=self.toggle_play_pause)
+        self.play_pause_button.pack(pady=5)
+
+        self.song_label = tk.Label(root, text="", font=("Helvetica", 14))
+        self.song_label.pack(pady=5)
+
+       
+        self.progress_bar = ttk.Progressbar(root, orient="horizontal", mode="determinate", length=300)
+        self.progress_bar.pack(pady=5)
+
+    def open_file(self):
+        file_path = filedialog.askopenfilename(filetypes=[("Audio files", "*.wav")])
+        if file_path:
+            self.audio_path = file_path
+            self.song_label.config(text=os.path.basename(file_path))
+            self.get_song_length()
+
+    def get_song_length(self):
+        if self.audio_path:
+            audio_info = winsound.GetSoundInfo(self.audio_path)
+            self.song_length = audio_info[1] / 1000  
+
+    def toggle_play_pause(self):
+        if self.audio_path:
+            if self.playing:
+                self.pause_audio()
+            else:
+                self.play_audio()
+
+    def play_audio(self):
+        if self.audio_path:
+            self.start_time = time.time()
+            winsound.PlaySound(self.audio_path, winsound.SND_FILENAME | winsound.SND_ASYNC)
+            self.play_pause_button.config(text="Pause")
+            self.playing = True
+            self.update_progress()
+
+    def pause_audio(self):
+        winsound.PlaySound(None, winsound.SND_PURGE)
+        self.play_pause_button.config(text="Play")
+        self.playing = False
+
+    def update_progress(self):
+        if self.playing:
+            elapsed_time = time.time() - self.start_time
+            progress = (elapsed_time / self.song_length) * 100
+            self.progress_bar["value"] = progress
+
+        self.root.after(100, self.update_progress)
+
+if __name__ == "__main__":
+    root = tk.Tk()
+    audio_player = AudioPlayer(root)
+    root.mainloop()
